@@ -1,0 +1,85 @@
+GB882
+Final Project Assignment - Complaint Details
+Taran Schlichtmann
+
+
+/* Determining when the first complaint was received. Refering to the 'date_received' */
+SELECT
+    date_received
+FROM
+    complaint_details
+ORDER BY
+    date_received ASC;
+    /* Financial products with most complaints by subproduct */
+SELECT
+    COUNT(complaint_id),
+    subproduct
+FROM
+    complaint_details
+GROUP BY
+    subproduct
+ORDER BY
+    COUNT(complaint_id) DESC;
+    /* Company with the most complaints about cryptocurrency in 2019 */
+SELECT
+    company_name,
+    COUNT(complaint_id) AS complaint_count
+FROM
+    complaint_details
+WHERE
+    YEAR(DATE_SENT_TO_COMPANY) = 2019
+    AND subproduct = 'Virtual currency'
+GROUP BY
+    company_name
+ORDER BY
+    complaint_count DESC
+LIMIT
+    1;
+    /* Comparing number of complaints received each month with number of complaints received the previous month and using date_received as the date */
+SELECT
+    YEAR(date_received) AS year,
+    MONTH(date_received) AS month,
+    COUNT(complaint_id) AS complaint_count,
+    LAG(COUNT(complaint_id)) OVER (
+        ORDER BY
+            YEAR(date_received),
+            MONTH(date_received)
+    ) AS prev_month_count,
+    COUNT(complaint_id) - LAG(COUNT(complaint_id)) OVER (
+        ORDER BY
+            YEAR(date_received),
+            MONTH(date_received)
+    ) AS change_from_prev
+FROM
+    complaint_details
+GROUP BY
+    YEAR(date_received),
+    MONTH(date_received)
+ORDER BY
+    year,
+    month;
+    /* Companies with poor complaint response time */
+SELECT
+    company_name,
+    COUNT(complaint_id) AS total_complaints,
+    COUNT(
+        CASE
+            WHEN timely_response = 'FALSE' THEN 1
+        END
+    ) AS untimely_complaints,
+    ROUND(
+        COUNT(
+            CASE
+                WHEN timely_response = 'FALSE' THEN 1
+            END
+        ) * 100.0 / COUNT(complaint_id),
+        2
+    ) AS percent_untimely
+FROM
+    complaint_details
+GROUP BY
+    company_name
+HAVING
+    COUNT(complaint_id) >= 200
+ORDER BY
+    percent_untimely DESC;
